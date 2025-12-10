@@ -41,6 +41,7 @@ class BybitClient:
     def _set_leverage(self):
         """レバレッジを設定"""
         try:
+            import json
             timestamp = str(int(time.time() * 1000))
             params = {
                 'category': 'linear',
@@ -49,8 +50,9 @@ class BybitClient:
                 'sellLeverage': str(self.config.leverage)
             }
             
-            query_string = '&'.join([f"{k}={v}" for k, v in sorted(params.items())])
-            param_str = f"{timestamp}{self.api_key}{self.recv_window}{query_string}"
+            # POSTリクエストの場合はJSONボディを使用
+            json_body = json.dumps(params)
+            param_str = f"{timestamp}{self.api_key}{self.recv_window}{json_body}"
             signature = self._generate_signature(param_str)
             
             headers = {
@@ -62,7 +64,7 @@ class BybitClient:
             }
             
             url = f"{self.base_url}/v5/position/set-leverage"
-            response = requests.post(url, params=params, headers=headers)
+            response = requests.post(url, json=params, headers=headers)
             result = response.json()
             
             if result['retCode'] == 0:
@@ -99,10 +101,12 @@ class BybitClient:
                 coins = result['result']['list'][0]['coin']
                 for coin in coins:
                     if coin['coin'] == 'USDT':
+                        wallet_balance = float(coin['walletBalance']) if coin['walletBalance'] else 0.0
+                        available_balance = float(coin['availableToWithdraw']) if coin['availableToWithdraw'] else 0.0
                         balance = {
-                            'total': float(coin['walletBalance']),
-                            'available': float(coin['availableToWithdraw']),
-                            'used': float(coin['walletBalance']) - float(coin['availableToWithdraw'])
+                            'total': wallet_balance,
+                            'available': available_balance,
+                            'used': wallet_balance - available_balance
                         }
                         return balance
                 return {'total': 0.0, 'available': 0.0, 'used': 0.0}
@@ -222,8 +226,10 @@ class BybitClient:
             if order_link_id:
                 params['orderLinkId'] = order_link_id
             
-            query_string = '&'.join([f"{k}={v}" for k, v in sorted(params.items())])
-            param_str = f"{timestamp}{self.api_key}{self.recv_window}{query_string}"
+            # POSTリクエストの場合はJSONボディを使用
+            import json
+            json_body = json.dumps(params)
+            param_str = f"{timestamp}{self.api_key}{self.recv_window}{json_body}"
             signature = self._generate_signature(param_str)
             
             headers = {
@@ -235,7 +241,7 @@ class BybitClient:
             }
             
             url = f"{self.base_url}/v5/order/create"
-            response = requests.post(url, params=params, headers=headers)
+            response = requests.post(url, json=params, headers=headers)
             result = response.json()
             
             if result['retCode'] == 0:
@@ -273,8 +279,10 @@ class BybitClient:
             else:
                 return False
             
-            query_string = '&'.join([f"{k}={v}" for k, v in sorted(params.items())])
-            param_str = f"{timestamp}{self.api_key}{self.recv_window}{query_string}"
+            # POSTリクエストの場合はJSONボディを使用
+            import json
+            json_body = json.dumps(params)
+            param_str = f"{timestamp}{self.api_key}{self.recv_window}{json_body}"
             signature = self._generate_signature(param_str)
             
             headers = {
@@ -286,7 +294,7 @@ class BybitClient:
             }
             
             url = f"{self.base_url}/v5/order/cancel"
-            response = requests.post(url, params=params, headers=headers)
+            response = requests.post(url, json=params, headers=headers)
             result = response.json()
             
             if result['retCode'] == 0:
@@ -307,8 +315,10 @@ class BybitClient:
             timestamp = str(int(time.time() * 1000))
             params = {'category': 'linear', 'symbol': symbol}
             
-            query_string = '&'.join([f"{k}={v}" for k, v in sorted(params.items())])
-            param_str = f"{timestamp}{self.api_key}{self.recv_window}{query_string}"
+            # POSTリクエストの場合はJSONボディを使用
+            import json
+            json_body = json.dumps(params)
+            param_str = f"{timestamp}{self.api_key}{self.recv_window}{json_body}"
             signature = self._generate_signature(param_str)
             
             headers = {
@@ -320,7 +330,7 @@ class BybitClient:
             }
             
             url = f"{self.base_url}/v5/order/cancel-all"
-            response = requests.post(url, params=params, headers=headers)
+            response = requests.post(url, json=params, headers=headers)
             result = response.json()
             
             if result['retCode'] == 0:
