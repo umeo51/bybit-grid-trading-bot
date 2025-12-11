@@ -102,7 +102,8 @@ class BybitClient:
                 for coin in coins:
                     if coin['coin'] == 'USDT':
                         wallet_balance = float(coin['walletBalance']) if coin['walletBalance'] else 0.0
-                        available_balance = float(coin['availableToWithdraw']) if coin['availableToWithdraw'] else 0.0
+                        # availableToWithdrawが空の場合はwalletBalanceを使用
+                        available_balance = float(coin['availableToWithdraw']) if coin['availableToWithdraw'] else wallet_balance
                         balance = {
                             'total': wallet_balance,
                             'available': available_balance,
@@ -418,10 +419,10 @@ class BybitClient:
                 return {
                     'symbol': pos['symbol'],
                     'side': pos['side'],
-                    'size': float(pos['size']),
+                    'size': float(pos['size']) if pos['size'] else 0.0,
                     'entry_price': float(pos['avgPrice']) if pos['avgPrice'] else 0.0,
-                    'unrealized_pnl': float(pos['unrealisedPnl']),
-                    'leverage': float(pos['leverage'])
+                    'unrealized_pnl': float(pos['unrealisedPnl']) if pos['unrealisedPnl'] else 0.0,
+                    'leverage': float(pos['leverage']) if pos['leverage'] else self.config.leverage
                 }
             return {
                 'symbol': symbol,
