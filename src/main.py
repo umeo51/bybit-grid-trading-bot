@@ -78,6 +78,16 @@ class GridTradingBot:
             
             self.logger.info(str(self.config))
             
+            # 既存の未約定注文をキャンセル
+            self.logger.info("既存の未約定注文をキャンセル中...")
+            if self.client.cancel_all_orders():
+                self.logger.info("既存の注文をキャンセルしました")
+                # キャンセル後、残高が更新されるまで少し待機
+                import time
+                time.sleep(2)
+            else:
+                self.logger.warning("注文のキャンセルに失敗しました（注文がない可能性があります）")
+            
             # 残高確認
             balance = self.client.get_balance()
             if not balance:
