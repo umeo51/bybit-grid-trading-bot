@@ -97,8 +97,8 @@ class GridTradingBot:
             self.logger.info(f"Available balance: {balance['available']:.2f} USDT")
             
             # 最小残高チェック
-            if balance['available'] < 10:
-                self.logger.error("Insufficient balance (minimum 10 USDT required)")
+            if balance['available'] < 100:
+                self.logger.error("Insufficient balance (minimum 100 USDT required for optimal grid strategy)")
                 return False
             
             # リスク管理初期化

@@ -12,12 +12,12 @@ trading:
   
 # グリッド戦略設定
 grid:
-  count: 40  # グリッド数
-  range_percent: 0.05  # 価格範囲 (±5%)
+  count: 6  # グリッド数（300 USDT前提で最適化、最小注文サイズをクリア）
+  range_percent: 0.03  # 価格範囲 (±3%)
   min_range_percent: 0.02  # 最小範囲 (±2%)
-  max_range_percent: 0.10  # 最大範囲 (±10%)
-  use_dynamic_range: true  # 動的範囲調整を使用
-  atr_multiplier: 3.0  # ATRの倍数
+  max_range_percent: 0.05  # 最大範囲 (±5%)
+  use_dynamic_range: false  # 動的範囲調整を無効化（固定範囲で安定運用）
+  atr_multiplier: 2.5  # ATRの倍数
   atr_period: 14  # ATR計算期間
   
 # 注文設定
@@ -29,11 +29,11 @@ order:
   
 # リスク管理設定
 risk:
-  max_position_ratio: 0.4  # 最大ポジション比率 (総資金の40%)
+  max_position_ratio: 0.85  # 最大ポジション比率 (総資金の85%、最小注文サイズをクリアするため)
   daily_loss_limit: 0.05  # 日次損失限界 (5%)
-  stop_loss_percent: 0.10  # ストップロス (10%)
-  max_drawdown: 0.15  # 最大ドローダウン (15%)
-  daily_profit_target: 0.02  # 日次利益目標 (2%)
+  stop_loss_percent: 0.08  # ストップロス (8%)
+  max_drawdown: 0.12  # 最大ドローダウン (12%)
+  daily_profit_target: 0.015  # 日次利益目標 (1.5%)
   
 # 手数料設定
 fees:
