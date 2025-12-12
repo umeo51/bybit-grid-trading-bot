@@ -18,6 +18,7 @@ from market_analyzer import MarketAnalyzer
 from grid_strategy import GridStrategy
 from risk_manager import RiskManager
 from position_manager import PositionManager
+from dynamic_config import DynamicConfigManager
 
 
 class GridTradingBot:
@@ -36,6 +37,9 @@ class GridTradingBot:
         # ロガー初期化
         self.logger = BotLogger(self.config)
         
+        # 動的設定マネージャー初期化
+        self.dynamic_config = DynamicConfigManager(self.logger)
+        
         # 各モジュール初期化
         self.client = BybitClient(self.config, self.logger)
         self.analyzer = MarketAnalyzer(self.config, self.logger, self.client)
@@ -48,6 +52,7 @@ class GridTradingBot:
         # 状態管理
         self.running = False
         self.order_size = 0.0
+        self.last_balance = 0.0
         self.last_position_check = 0
         
         # シグナルハンドラー設定
@@ -95,11 +100,31 @@ class GridTradingBot:
                 return False
             
             self.logger.info(f"Available balance: {balance['available']:.2f} USDT")
+            self.logger.info(f"Total balance: {balance['total']:.2f} USDT")
             
             # 最小残高チェック
-            if balance['available'] < 100:
-                self.logger.error("Insufficient balance (minimum 100 USDT required for optimal grid strategy)")
+            if balance['available'] < 300:
+                self.logger.error("Insufficient balance (minimum 300 USDT required)")
                 return False
+            
+            # 資産額に応じた最適設定を取得
+            self.logger.info("\n" + "="*60)
+            self.logger.info("Applying dynamic configuration based on balance...")
+            self.logger.info("="*60)
+            
+            optimal_settings = self.dynamic_config.get_optimal_settings(balance['available'])
+            if not optimal_settings:
+                self.logger.error("Failed to get optimal settings")
+                return False
+            
+            # 設定を動的に更新
+            self.config.grid_count = optimal_settings['grid_count']
+            self.config.range_percent = optimal_settings['range_percent']
+            self.config.max_position_ratio = optimal_settings['max_position_ratio']
+            self.config.leverage = optimal_settings['leverage']
+            
+            self.logger.info(self.dynamic_config.get_tier_info())
+            self.last_balance = balance['available']
             
             # リスク管理初期化
             if not self.risk_manager.initialize():
@@ -164,6 +189,36 @@ class GridTradingBot:
                     continue
                 
                 current_balance = balance['total']
+                available_balance = balance['available']
+                
+                # 1.5. 資産額に応じた再調整チェック
+                if self.dynamic_config.should_rebalance(available_balance):
+                    self.logger.info("\n" + "="*60)
+                    self.logger.info("Balance tier changed - Rebalancing configuration...")
+                    self.logger.info("="*60)
+                    
+                    # 新しい最適設定を取得
+                    optimal_settings = self.dynamic_config.get_optimal_settings(available_balance)
+                    if optimal_settings:
+                        # 設定を更新
+                        self.config.grid_count = optimal_settings['grid_count']
+                        self.config.range_percent = optimal_settings['range_percent']
+                        self.config.max_position_ratio = optimal_settings['max_position_ratio']
+                        self.config.leverage = optimal_settings['leverage']
+                        
+                        self.logger.info(self.dynamic_config.get_tier_info())
+                        self.last_balance = available_balance
+                        
+                        # グリッドを再初期化
+                        self.logger.info("グリッドを再初期化します...")
+                        current_price = self.analyzer.get_current_price()
+                        if current_price:
+                            self.order_size = self.strategy.calculate_order_size(
+                                available_balance,
+                                current_price,
+                                self.config.grid_count
+                            )
+                            self.position_manager.rebalance_grid(self.order_size)
                 
                 # 2. リスクチェック
                 should_stop, reason = self.risk_manager.should_stop_trading(current_balance)
