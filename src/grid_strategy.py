@@ -32,6 +32,10 @@ class GridStrategy:
         self.grid_range = (0.0, 0.0)
         self.grid_step = 0.0
         self.last_update_time = 0
+        
+        # セッションIDを生成（BOT起動時のタイムスタンプ）
+        self.session_id = int(time.time())
+        self.logger.info(f"Grid strategy initialized with session ID: {self.session_id}")
     
     def calculate_grid_levels(self, 
                              current_price: float,
@@ -175,17 +179,23 @@ class GridStrategy:
         self.client.cancel_all_orders()
         time.sleep(1)
         
+        # タイムスタンプを生成（ミリ秒単位で一意性を確保）
+        timestamp = int(time.time() * 1000)
+        
         # 買い注文を配置
         for i, price in enumerate(self.buy_levels):
             try:
                 # 価格をわずかにオフセット（メイカー注文を確実にする）
                 adjusted_price = price * (1 - self.config.order_offset_percent)
                 
+                # 一意のorderLinkIdを生成（セッションID + タイムスタンプ + インデックス）
+                order_link_id = f"grid_buy_{self.session_id}_{timestamp}_{i}"
+                
                 order = self.client.place_limit_order(
                     side="Buy",
                     qty=order_size,
                     price=adjusted_price,
-                    order_link_id=f"grid_buy_{i}"
+                    order_link_id=order_link_id
                 )
                 
                 if order:
@@ -202,11 +212,14 @@ class GridStrategy:
                 # 価格をわずかにオフセット
                 adjusted_price = price * (1 + self.config.order_offset_percent)
                 
+                # 一意のorderLinkIdを生成
+                order_link_id = f"grid_sell_{self.session_id}_{timestamp}_{i}"
+                
                 order = self.client.place_limit_order(
                     side="Sell",
                     qty=order_size,
                     price=adjusted_price,
-                    order_link_id=f"grid_sell_{i}"
+                    order_link_id=order_link_id
                 )
                 
                 if order:
