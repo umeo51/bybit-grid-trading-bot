@@ -119,7 +119,7 @@ class GridTradingBot:
             
             # 設定を動的に更新
             self.config.grid_count = optimal_settings['grid_count']
-            self.config.range_percent = optimal_settings['range_percent']
+            self.config.grid_range_percent = optimal_settings['range_percent']  # 修正: grid_range_percentに保存
             self.config.max_position_ratio = optimal_settings['max_position_ratio']
             self.config.leverage = optimal_settings['leverage']
             
