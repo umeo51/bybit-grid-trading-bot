@@ -63,10 +63,12 @@ class PositionManager:
                     # 注文履歴から実際のステータスを確認
                     order_history = self.client.get_order_history(limit=100)
                     order_status = None
+                    reject_reason = ''
                     
                     for hist_order in order_history:
                         if hist_order['order_id'] == order_id:
                             order_status = hist_order['status']
+                            reject_reason = hist_order.get('reject_reason', '')
                             break
                     
                     # Filledステータスの場合のみ約定処理
@@ -82,9 +84,11 @@ class PositionManager:
                         else:
                             filled_orders['sell_filled'].append(order_info)
                     elif order_status == 'Cancelled':
-                        self.logger.debug(f"Order cancelled: {order_info['side']} @ {order_info['price']:.2f}")
+                        reason_msg = f" (Reason: {reject_reason})" if reject_reason else ""
+                        self.logger.warning(f"Order cancelled: {order_info['side']} @ {order_info['price']:.2f}{reason_msg}")
                     elif order_status == 'Rejected':
-                        self.logger.warning(f"Order rejected: {order_info['side']} @ {order_info['price']:.2f}")
+                        reason_msg = f" (Reason: {reject_reason})" if reject_reason else ""
+                        self.logger.warning(f"Order rejected: {order_info['side']} @ {order_info['price']:.2f}{reason_msg}")
                     else:
                         self.logger.debug(f"Order removed (status: {order_status}): {order_info['side']} @ {order_info['price']:.2f}")
                     

@@ -426,6 +426,7 @@ class BybitClient:
                         'qty': float(order['qty']),
                         'filled_qty': float(order.get('cumExecQty', 0)),
                         'status': order['orderStatus'],
+                        'reject_reason': order.get('rejectReason', ''),
                         'created_time': order['createdTime'],
                         'updated_time': order['updatedTime']
                     })
