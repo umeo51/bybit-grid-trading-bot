@@ -54,28 +54,19 @@ class GridStrategy:
         """
         lower_price, upper_price = grid_range
         
-        # グリッド間隔を計算
+        # グリッド間隔を計算（範囲全体をgrid_count個に分割）
         grid_step = (upper_price - lower_price) / grid_count
         
-        buy_levels = []
-        sell_levels = []
+        # 範囲全体を均等に分割してグリッドポイントを生成
+        grid_points = [lower_price + grid_step * i for i in range(grid_count + 1)]
         
-        # 現在価格を基準にグリッドを配置
-        # 現在価格より下に買い注文、上に売り注文
-        for i in range(grid_count // 2):
-            # 買いレベル（現在価格より下）
-            buy_price = current_price - (grid_step * (i + 1))
-            if buy_price >= lower_price:
-                buy_levels.append(buy_price)
-            
-            # 売りレベル（現在価格より上）
-            sell_price = current_price + (grid_step * (i + 1))
-            if sell_price <= upper_price:
-                sell_levels.append(sell_price)
+        # 現在価格を基準に買いレベルと売りレベルに分類
+        buy_levels = [price for price in grid_points if price < current_price]
+        sell_levels = [price for price in grid_points if price > current_price]
         
         # 価格順にソート
-        buy_levels.sort(reverse=True)  # 高い順
-        sell_levels.sort()  # 低い順
+        buy_levels.sort(reverse=True)  # 高い順（現在価格に近い順）
+        sell_levels.sort()  # 低い順（現在価格に近い順）
         
         self.logger.debug(f"Grid levels calculated: {len(buy_levels)} buy, {len(sell_levels)} sell")
         
