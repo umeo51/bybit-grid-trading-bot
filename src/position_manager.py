@@ -37,8 +37,67 @@ class PositionManager:
         self.current_position = None
         self.position_entry_price = 0.0
         self.position_size = 0.0
+        
+        # 初回起動フラグ
+        self.is_first_run = True
     
-    def track_orders(self) -> Dict[str, List]:
+    def sync_initial_state(self):
+        """
+        初回起動時に、既存のポジションと約定済み注文を同期
+        """
+        try:
+            # 現在のポジションを取得
+            position = self.client.get_position()
+            if position and abs(float(position.get('size', 0))) > 0:
+                position_size = abs(float(position.get('size', 0)))
+                avg_price = float(position.get('avgPrice', 0))
+                side = position.get('side', '')
+                
+                self.logger.warning(f"Existing position detected: {position_size} BTC ({side}) @ {avg_price:.2f}")
+                self.current_position = position
+                self.position_size = position_size
+                self.position_entry_price = avg_price
+                
+                # ポジションに対する利益確定注文を配置
+                self.logger.info("Placing counter orders for existing position...")
+                
+                # グリッド間隔を取得
+                grid_step = self.strategy.grid_step
+                
+                # ポジションの種類に応じて対向注文を配置
+                if side == 'Buy':  # ロングポジション → 売り注文で利益確定
+                    counter_price = avg_price + grid_step
+                    counter_side = 'Sell'
+                else:  # ショートポジション → 買い注文で利益確定
+                    counter_price = avg_price - grid_step
+                    counter_side = 'Buy'
+                
+                # 対向注文を配置
+                order_result = self.client.place_limit_order(
+                    side=counter_side,
+                    qty=position_size,
+                    price=counter_price
+                )
+                
+                if order_result:
+                    self.logger.info(f"Counter order placed: {counter_side} {position_size} BTC @ {counter_price:.2f}")
+                    self.active_orders[order_result['order_id']] = order_result
+                else:
+                    self.logger.error("Failed to place counter order for existing position")
+            
+            # 未約定注文を初期化（重複しないように）
+            open_orders = self.client.get_open_orders()
+            for order in open_orders:
+                if order['order_id'] not in self.active_orders:
+                    self.active_orders[order['order_id']] = order
+            
+            self.logger.info(f"Initial state synced: {len(self.active_orders)} open orders, position size: {self.position_size} BTC")
+            self.is_first_run = False
+            
+        except Exception as e:
+            self.logger.error(f"Error syncing initial state: {e}")
+    
+    def track_orders(self) -> Dict:str, List]:
         """
         注文を追跡し、約定を確認
         

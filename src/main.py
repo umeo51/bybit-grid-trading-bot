@@ -161,6 +161,9 @@ class GridTradingBot:
             for order in placed_orders['buy_orders'] + placed_orders['sell_orders']:
                 self.position_manager.active_orders[order['order_id']] = order
             
+            # 初期状態を同期（既存ポジションをチェック）
+            self.position_manager.sync_initial_state()
+            
             self.logger.info("=" * 60)
             self.logger.info("Bot initialized successfully")
             self.logger.info("=" * 60)
