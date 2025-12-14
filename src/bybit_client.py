@@ -389,6 +389,53 @@ class BybitClient:
             self.logger.error(f"Error getting open orders: {e}")
             return []
     
+    def get_order_history(self, symbol: str = None, limit: int = 50) -> List[Dict]:
+        """注文履歴を取得（最近の約定/キャンセル済み注文）"""
+        if symbol is None:
+            symbol = self.config.symbol
+        
+        try:
+            timestamp = str(int(time.time() * 1000))
+            params = {'category': 'linear', 'symbol': symbol, 'limit': str(limit)}
+            
+            query_string = '&'.join([f"{k}={v}" for k, v in sorted(params.items())])
+            param_str = f"{timestamp}{self.api_key}{self.recv_window}{query_string}"
+            signature = self._generate_signature(param_str)
+            
+            headers = {
+                'X-BAPI-API-KEY': self.api_key,
+                'X-BAPI-SIGN': signature,
+                'X-BAPI-TIMESTAMP': timestamp,
+                'X-BAPI-RECV-WINDOW': self.recv_window,
+                'Content-Type': 'application/json'
+            }
+            
+            url = f"{self.base_url}/v5/order/history"
+            response = requests.get(url, params=params, headers=headers)
+            result = response.json()
+            
+            if result['retCode'] == 0:
+                orders = []
+                for order in result['result']['list']:
+                    orders.append({
+                        'order_id': order['orderId'],
+                        'order_link_id': order.get('orderLinkId'),
+                        'symbol': order['symbol'],
+                        'side': order['side'],
+                        'price': float(order['price']),
+                        'qty': float(order['qty']),
+                        'filled_qty': float(order.get('cumExecQty', 0)),
+                        'status': order['orderStatus'],
+                        'created_time': order['createdTime'],
+                        'updated_time': order['updatedTime']
+                    })
+                return orders
+            return []
+                
+        except Exception as e:
+            self.logger.error(f"Error getting order history: {e}")
+            return []
+    
     def get_position(self, symbol: str = None) -> Optional[Dict]:
         """ポジション情報を取得"""
         if symbol is None:

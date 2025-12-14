@@ -57,20 +57,36 @@ class PositionManager:
             # アクティブな注文IDのセット
             open_order_ids = {order['order_id'] for order in open_orders}
             
-            # 以前アクティブだった注文で、今は存在しない = 約定した
+            # 以前アクティブだった注文で、今は存在しない注文を確認
             for order_id, order_info in list(self.active_orders.items()):
                 if order_id not in open_order_ids:
-                    # 約定した注文
-                    self.logger.info(f"Order filled: {order_info['side']} @ {order_info['price']:.2f}")
+                    # 注文履歴から実際のステータスを確認
+                    order_history = self.client.get_order_history(limit=100)
+                    order_status = None
                     
-                    # 約定処理
-                    self.handle_filled_order(order_info)
+                    for hist_order in order_history:
+                        if hist_order['order_id'] == order_id:
+                            order_status = hist_order['status']
+                            break
                     
-                    # リストに追加
-                    if order_info['side'] == 'Buy':
-                        filled_orders['buy_filled'].append(order_info)
+                    # Filledステータスの場合のみ約定処理
+                    if order_status == 'Filled':
+                        self.logger.info(f"Order filled: {order_info['side']} @ {order_info['price']:.2f}")
+                        
+                        # 約定処理
+                        self.handle_filled_order(order_info)
+                        
+                        # リストに追加
+                        if order_info['side'] == 'Buy':
+                            filled_orders['buy_filled'].append(order_info)
+                        else:
+                            filled_orders['sell_filled'].append(order_info)
+                    elif order_status == 'Cancelled':
+                        self.logger.debug(f"Order cancelled: {order_info['side']} @ {order_info['price']:.2f}")
+                    elif order_status == 'Rejected':
+                        self.logger.warning(f"Order rejected: {order_info['side']} @ {order_info['price']:.2f}")
                     else:
-                        filled_orders['sell_filled'].append(order_info)
+                        self.logger.debug(f"Order removed (status: {order_status}): {order_info['side']} @ {order_info['price']:.2f}")
                     
                     # アクティブリストから削除
                     del self.active_orders[order_id]
