@@ -97,7 +97,7 @@ class PositionManager:
         except Exception as e:
             self.logger.error(f"Error syncing initial state: {e}")
     
-    def track_orders(self) -> Dict:str, List]:
+    def track_orders(self) -> Dict[str, List]:
         """
         注文を追跡し、約定を確認
         
