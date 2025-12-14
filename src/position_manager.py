@@ -50,7 +50,7 @@ class PositionManager:
             position = self.client.get_position()
             if position and abs(float(position.get('size', 0))) > 0:
                 position_size = abs(float(position.get('size', 0)))
-                avg_price = float(position.get('avgPrice', 0))
+                avg_price = float(position.get('entry_price', 0))
                 side = position.get('side', '')
                 
                 self.logger.warning(f"Existing position detected: {position_size} BTC ({side}) @ {avg_price:.2f}")
