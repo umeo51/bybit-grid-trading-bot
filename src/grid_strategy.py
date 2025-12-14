@@ -60,9 +60,12 @@ class GridStrategy:
         # 範囲全体を均等に分割してグリッドポイントを生成
         grid_points = [lower_price + grid_step * i for i in range(grid_count + 1)]
         
+        # 現在価格に近すぎるポイントを除外するための最小距離（グリッド間隔の10%）
+        min_distance = grid_step * 0.1
+        
         # 現在価格を基準に買いレベルと売りレベルに分類
-        buy_levels = [price for price in grid_points if price < current_price]
-        sell_levels = [price for price in grid_points if price > current_price]
+        buy_levels = [price for price in grid_points if price < current_price - min_distance]
+        sell_levels = [price for price in grid_points if price > current_price + min_distance]
         
         # 価格順にソート
         buy_levels.sort(reverse=True)  # 高い順（現在価格に近い順）
